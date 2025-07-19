@@ -1,5 +1,5 @@
 from transformers import AutoTokenizer
-
+import pprint
 tokenizer = AutoTokenizer.from_pretrained("dslim/bert-base-NER")
 
 # WITHOUT PADDING AND EOS
