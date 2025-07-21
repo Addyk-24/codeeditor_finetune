@@ -1,4 +1,4 @@
-# from utilities import *
+from utilities import *
 from transformers import AutoTokenizer
 from transformers import AutoModelForCausalLM
 from transformers import TrainingArguments
@@ -22,6 +22,7 @@ dataset_path = "lamini/lamini_docs"
 use_hf = True
 
 logger = logging.getLogger(__name__)
+
 global_config = None
 
 training_config = {
@@ -114,3 +115,19 @@ else:
 # metric_for_best_model="eval_loss",
 # greater_is_better=False
 # )
+
+
+# MAIN TRAINER
+
+trainer = Trainer(
+    model=base_model,
+    model_flops=model_flops,
+    total_steps=max_steps,
+    args=training_args,
+    train_dataset=train_dataset,
+    eval_dataset=test_dataset,
+)
+trainer.do_grad_scaling = False
+
+
+# training_output = trainer.train()
