@@ -16,7 +16,6 @@ def main():
     sample_text = "Hi, This is Aditya and I like to explore new technologies."
     # tokenized_output = tokenize_text(sample_text)
     tokenized_output = tokenize_text_with_padding(sample_text)
-=======
 
 
 if __name__ == "__main__":
