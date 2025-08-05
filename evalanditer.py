@@ -32,6 +32,11 @@ logger = logging.getLogger(__name__)
 global_config = None
 
 
+
+# Eval your model then make predicted outputs dataset and put it in some path and then use it for evaluation benchmarks based your use case
+evaluation_dataset_path = "lamini/lamini_docs_evaluation"
+evaluation_dataset = datasets.load_dataset(evaluation_dataset_path)
+
 # Try the ARC benchmark - for academic reading comprehension
 # !python lm-evaluation-harness/main.py --model hf-causal --model_args pretrained=lamini/lamini_docs_finetuned --tasks arc_easy --device cpu
 
