@@ -31,3 +31,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 logger = logging.getLogger(__name__)
 global_config = None
 
+
+# Try the ARC benchmark - for academic reading comprehension
+# !python lm-evaluation-harness/main.py --model hf-causal --model_args pretrained=lamini/lamini_docs_finetuned --tasks arc_easy --device cpu
+
+# There are many other benchmarks available, such as:
