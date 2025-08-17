@@ -1,9 +1,15 @@
-from transformers import AutoTokenizer, AutoModelForMaskedLM
+from transformers import AutoTokenizer, AutoModelForMaskedLM, TrainingArguments,Trainer
 import torch
 import accelerate
+
+from peft import LoraConfig, get_peft_model, PeftModel
+
 from datasets import load_dataset
 
 import logging
+
+logger = logging.getLogger(__name__)
+global_config = None
 
 
 model_name = "distilbert/distilbert-base-uncased"
@@ -17,6 +23,9 @@ if tokenizer.pad_token is None:
 
 print(df["train"][0])
 
+train_dataset = df["train"]
+test_dataset = df["test"]
+
 device_count = torch.cuda.device_count()
 if device_count > 0:
 	logger.debug("Select GPU device")
@@ -27,7 +36,7 @@ else:
 
 use_hf = True
 training_config = {
-    "model": {"pretrained_model_name":model,"max_length":2048},
+    "model": {"pretrained_model_name":model_name,"max_length":2048},
     "dataset":{"use_hf" : use_hf,"path":df_path},
     "verbose":True
 }
@@ -48,3 +57,44 @@ def inference(input_text, model,tokenizer,max_input_length = 2048,max_output_Len
     generated_text = generated_text[0][len(input_text):]
 
     return generated_text
+
+max_steps = 3
+output_dir = "output"
+
+training_args = TrainingArguments(
+learning_rate=1.0e-5,
+num_train_epochs=1,
+max_steps=max_steps,
+per_device_train_batch_size=1,
+output_dir=output_dir,
+
+)
+
+model_flops = (
+	model.floating_point_ops(
+	{
+	"input_ids": torch.zeros(
+	(1, training_config["model"]["max_length"])
+	)
+	}
+	)
+	  * training_args.gradient_accumulation_steps
+)
+
+# print("Memory footprint", model.get_memory_footprint() / 1e9, "GB")
+# print("Flops", model_flops / 1e9, "GFLOPs")
+
+trainer= SFTTrainer(
+    model=model,
+    args=training_arguments,
+    train_dataset=dataset["train"],
+    eval_dataset=dataset["test"],
+    processing_class=tokenizer,
+    peft_config=peft_config,
+)
+trainer.do_grad_scaling = False
+
+training_output = trainer.train()
+
+print("Training completed.")
+trainer.save_model()
