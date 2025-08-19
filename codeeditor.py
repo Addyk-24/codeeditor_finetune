@@ -14,4 +14,3 @@ print("Below is dtataet info:")
 n = 5
 top_n = list(itertools.islice(ds["train"],n))
 print(top_n)
-

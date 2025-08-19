@@ -17,5 +17,3 @@ def tokenize_func(text):
 tokenized_dataset = dataset.map(tokenize_func,batched=True)
 
 print("Tokenized Dataset: \n", tokenized_dataset["test"]["input_ids"][0])
-
-
