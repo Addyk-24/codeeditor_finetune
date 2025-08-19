@@ -2,7 +2,7 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM, TrainingArguments,
 import torch
 import accelerate
 
-from peft import LoraConfig, get_peft_model, PeftModel
+# from peft import LoraConfig, get_peft_model, PeftModel
 
 from datasets import load_dataset
 
@@ -21,10 +21,18 @@ df_path = "mteb/tweet_sentiment_extraction"
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 
-print(df["train"][0])
+# print(df["train"][0])
 
 train_dataset = df["train"]
 test_dataset = df["test"]
+
+
+# def tokenization(text):
+#             train_tokenized_text = tokenizer(text["train"],padding=True)["input_ids"]
+#             test_tokenized_text = tokenizer(text["test"],padding=True)["input_ids"]
+#             return {"train":train_tokenized_text,"test":test_tokenized_text}
+          
+
 
 device_count = torch.cuda.device_count()
 if device_count > 0:
@@ -35,13 +43,27 @@ else:
 	device = torch.device("cpu")
 
 use_hf = True
+
 training_config = {
-    "model": {"pretrained_model_name":model_name,"max_length":2048},
+    "model": {"pretrained_model_name":model_name,"max_length":512},
     "dataset":{"use_hf" : use_hf,"path":df_path},
     "verbose":True
 }
 
-def inference(input_text, model,tokenizer,max_input_length = 2048,max_output_Length = 2048):
+def tokenization(batch):
+    tokenized = tokenizer(
+        batch["text"],
+        padding="max_length",
+        truncation=True,
+        max_length=training_config["model"]["max_length"]
+    )
+    tokenized["labels"] = tokenized["input_ids"].copy()
+    return tokenized
+
+train_dataset = df["train"].map(tokenization, batched=True)
+test_dataset = df["test"].map(tokenization, batched=True)  
+
+def inference(input_text, model,tokenizer,max_input_length = 512,max_output_Length = 512):
     # Tokenizer
     input_ids = tokenizer.encode(input_text, return_tensors="pt",max_length=max_input_length)
 
@@ -71,30 +93,65 @@ output_dir=output_dir,
 )
 
 model_flops = (
-	model.floating_point_ops(
-	{
-	"input_ids": torch.zeros(
-	(1, training_config["model"]["max_length"])
-	)
-	}
-	)
-	  * training_args.gradient_accumulation_steps
+    model.floating_point_ops(
+        {
+            "input_ids": torch.zeros(
+                (1, training_config["model"]["max_length"]), dtype=torch.long
+            )
+        }
+    )
+    * training_args.gradient_accumulation_steps
 )
-
 # print("Memory footprint", model.get_memory_footprint() / 1e9, "GB")
 # print("Flops", model_flops / 1e9, "GFLOPs")
 
-trainer= SFTTrainer(
-    model=model,
-    args=training_arguments,
-    train_dataset=dataset["train"],
-    eval_dataset=dataset["test"],
-    processing_class=tokenizer,
-    peft_config=peft_config,
+# trainer= SFTTrainer(
+#     model=model,
+#     args=training_arguments,
+#     train_dataset=dataset["train"],
+#     eval_dataset=dataset["test"],
+#     processing_class=tokenizer,
+#     peft_config=peft_config,
+# )
+
+trainer = Trainer(
+model=model,
+args=training_args,
+train_dataset=train_dataset,
+eval_dataset=test_dataset,
 )
+
 trainer.do_grad_scaling = False
 
 training_output = trainer.train()
 
-print("Training completed.")
-trainer.save_model()
+save_dir = f'{output_dir}/final'
+
+trainer.save_model(save_dir)
+print("Saved model to:", save_dir)
+
+finetuned_model = AutoModelForMaskedLM.from_pretrained(save_dir, local_files_only=True)
+
+finetuned_model.to(device) 
+
+test_question = test_dataset[0]['question']
+print("Question input (test):", test_question)
+
+print("Finetuned slightly model's answer: ")
+print(inference(test_question, finetuned_model, tokenizer))
+
+
+test_answer = test_dataset[0]['answer']
+print("Target answer output (test):", test_answer)
+
+evalution_mode = model.evaluate()
+
+print("Evaluation mode:", evalution_mode)
+
+
+
+
+# print("Training completed.")
+# trainer.save_model()
+
+# print("Model saved to", output_dir)
