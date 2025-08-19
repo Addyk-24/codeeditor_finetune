@@ -3,6 +3,12 @@ __pycache__/
 *.py[codz]
 *$py.class
 error.py
+df.py
+static
+codeeditor_finetune.git
+output
+static
+codeeditor_finetune.git.bfg-report
 # C extensions
 *.so
 
