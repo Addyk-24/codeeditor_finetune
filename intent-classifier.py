@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 global_config = None
 
 
-model_name = "distilbert/distilbert-base-uncased"
+model_name = "google-bert/bert-base-uncased"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForMaskedLM.from_pretrained(model_name,torch_dtype=torch.float16,device_map="auto")
 
