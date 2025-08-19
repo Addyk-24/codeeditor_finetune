@@ -134,14 +134,14 @@ finetuned_model = AutoModelForMaskedLM.from_pretrained(save_dir, local_files_onl
 
 finetuned_model.to(device) 
 
-test_question = test_dataset[0]['question']
+test_question = df["test"]['text'][0]
 print("Question input (test):", test_question)
 
 print("Finetuned slightly model's answer: ")
 print(inference(test_question, finetuned_model, tokenizer))
 
 
-test_answer = test_dataset[0]['answer']
+test_answer = test_dataset["test"]['label_text'][0]
 print("Target answer output (test):", test_answer)
 
 evalution_mode = model.evaluate()
