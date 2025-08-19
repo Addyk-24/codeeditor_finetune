@@ -1,4 +1,4 @@
-from transformers import AutoTokenizer, AutoModelForMaskedLM, TrainingArguments,Trainer
+from transformers import AutoTokenizer, AutoModelForMaskedLM, TrainingArguments,Trainer, AutoProcessor
 import torch
 import accelerate
 
@@ -12,9 +12,13 @@ logger = logging.getLogger(__name__)
 global_config = None
 
 
-model_name = "google-bert/bert-base-uncased"
+# model_name = "google-bert/bert-base-uncased"
+model_name = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForMaskedLM.from_pretrained(model_name,torch_dtype=torch.float16,device_map="auto")
+
+# processor = AutoProcessor.from_pretrained(model_name)
 
 df = load_dataset("mteb/tweet_sentiment_extraction")
 df_path = "mteb/tweet_sentiment_extraction"
@@ -34,13 +38,6 @@ test_dataset = df["test"]
           
 
 
-device_count = torch.cuda.device_count()
-if device_count > 0:
-	logger.debug("Select GPU device")
-	device = torch.device("cuda")
-else:
-	logger.debug("Select CPU device")
-	device = torch.device("cpu")
 
 use_hf = True
 
@@ -63,15 +60,29 @@ def tokenization(batch):
 train_dataset = df["train"].map(tokenization, batched=True)
 test_dataset = df["test"].map(tokenization, batched=True)  
 
+# FOR CLASSIFICATION MODELS
+def classify(input_text, model, tokenizer, max_input_length=512):
+    inputs = tokenizer(input_text, return_tensors="pt", max_length=max_input_length, truncation=True).to(model.device)
+
+    with torch.no_grad():
+        outputs = model(**inputs)
+    
+    logits = outputs.logits
+    probs = F.softmax(logits, dim=-1)
+    pred_id = logits.argmax(dim=-1).item()
+    label = model.config.id2label[pred_id]
+
+    return {"label": label, "confidence": probs[0][pred_id].item()}
+
+# FOR GENERATION MODELS
 def inference(input_text, model,tokenizer,max_input_length = 512,max_output_Length = 512):
     # Tokenizer
-    input_ids = tokenizer.encode(input_text, return_tensors="pt",max_length=max_input_length)
-
-    model = model.device()
+    input = tokenizer.encode(input_text, return_tensors="pt",max_length=max_input_length).to(model.device)
+    
+    # input_len = input["input_ids"].shape[-1]
 
     # Generate
-    generate_tokens_prompt = model.generate(input_ids = input_ids.to(device),max_length = max_output_Length)
-
+    generate_tokens_prompt = model.generate(**input,max_length = max_output_Length)
     # Decode
     generated_text = tokenizer.batch_decode(generate_tokens_prompt, skip_special_tokens=True)
 
@@ -132,7 +143,7 @@ print("Saved model to:", save_dir)
 
 finetuned_model = AutoModelForMaskedLM.from_pretrained(save_dir, local_files_only=True)
 
-finetuned_model.to(device) 
+# finetuned_model.to(device) 
 
 test_question = df["test"]['text'][0]
 print("Question input (test):", test_question)
