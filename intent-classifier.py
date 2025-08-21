@@ -1,4 +1,4 @@
-from transformers import AutoTokenizer, AutoModelForMaskedLM, TrainingArguments,Trainer, AutoProcessor
+from transformers import AutoTokenizer,AutoModelForSequenceClassification, AutoModelForMaskedLM, TrainingArguments,Trainer, AutoProcessor
 import torch
 import accelerate
 
@@ -14,10 +14,12 @@ global_config = None
 
 
 # model_name = "google-bert/bert-base-uncased"
-model_name = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+# model_name = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+model_name = "bert-base-uncased"
+
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForMaskedLM.from_pretrained(model_name,torch_dtype=torch.float16,device_map="auto")
+model = AutoModelForSequenceClassification.from_pretrained(model_name,torch_dtype=torch.float16,device_map="auto")
 
 # processor = AutoProcessor.from_pretrained(model_name)
 
@@ -142,15 +144,17 @@ save_dir = f'{output_dir}/final'
 trainer.save_model(save_dir)
 print("Saved model to:", save_dir)
 
-finetuned_model = AutoModelForMaskedLM.from_pretrained(save_dir, local_files_only=True)
+finetuned_model = AutoModelForSequenceClassification.from_pretrained(save_dir, local_files_only=True)
 
 # finetuned_model.to(device) 
 
 test_question = df["test"]['text'][0]
 print("Question input (test):", test_question)
 
+# print("Finetuned slightly model's answer: ")
+# print(inference(test_question, finetuned_model, tokenizer))
 print("Finetuned slightly model's answer: ")
-print(inference(test_question, finetuned_model, tokenizer))
+print(finetuned_model.predict(test_question))
 
 
 test_answer = test_dataset["test"]['label_text'][0]
