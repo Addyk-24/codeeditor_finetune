@@ -64,18 +64,18 @@ train_dataset = df["train"].map(tokenization, batched=True)
 test_dataset = df["test"].map(tokenization, batched=True)  
 
 # FOR CLASSIFICATION MODELS
-def classify(input_text, model, tokenizer, max_input_length=512):
-    inputs = tokenizer(input_text, return_tensors="pt", max_length=max_input_length, truncation=True).to(model.device)
+# def classify(input_text, model, tokenizer, max_input_length=512):
+#     inputs = tokenizer(input_text, return_tensors="pt", max_length=max_input_length, truncation=True).to(model.device)
 
-    with torch.no_grad():
-        outputs = model(**inputs)
+#     with torch.no_grad():
+#         outputs = model(**inputs)
     
-    logits = outputs.logits
-    probs = F.softmax(logits, dim=-1)
-    pred_id = logits.argmax(dim=-1).item()
-    label = model.config.id2label[pred_id]
+#     logits = outputs.logits
+#     probs = F.softmax(logits, dim=-1)
+#     pred_id = logits.argmax(dim=-1).item()
+#     label = model.config.id2label[pred_id]
 
-    return {"label": label, "confidence": probs[0][pred_id].item()}
+#     return {"label": label, "confidence": probs[0][pred_id].item()}
 
 # FOR GENERATION MODELS
 def inference(input_text, model,tokenizer,max_input_length = 512,max_output_Length = 512):
