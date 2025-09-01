@@ -100,3 +100,24 @@ print(classification_report(tokenized_datasets["test"]["label"], predicted_label
 cm = confusion_matrix(tokenized_datasets["test"]["label"], predicted_labels)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Class 0", "Class 1"])
 disp.plot()
+
+
+
+# Load the fine-tuned model
+model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased")
+
+# Define dummy input for tracing
+dummy_input = torch.randint(0, 100, (1, 128))
+
+# Export to ONNX
+torch.onnx.export(
+    model,
+    dummy_input,
+    "bert_classification.onnx",
+    input_names=["input_ids"],
+    output_names=["output"],
+    dynamic_axes={"input_ids": {0: "batch_size"}, "output": {0: "batch_size"}},
+    opset_version=11
+)
+
+print("Model exported to ONNX format")
