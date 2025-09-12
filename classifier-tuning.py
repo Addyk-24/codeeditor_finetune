@@ -4,6 +4,7 @@ from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
 from evaluate import load
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+import torch
 
 
 dataset = load_dataset("imdb")
