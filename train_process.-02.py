@@ -101,7 +101,7 @@ else:
 # save_steps=120, # After # steps model is saved
 # warmup_steps=1, # Number of warmup steps for learning rate scheduler
 # per_device_eval_batch_size=1, # Batch size for evaluation
-# evaluation_strategy="steps",
+# eval_strategy ="steps", 
 # logging_strategy="steps",
 # logging_steps=1,
 # optim="adafactor",
