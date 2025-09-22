@@ -24,7 +24,16 @@ class IMDbReview:
         
         self.model = AutoModelForSequenceClassification.from_pretrained(path)
         self.model.eval()
+
+    def preprocess(self,text,max_length=512):
+        tokenized_text = self.tokenizer(
+            text,
+            truncation = True,
+            padding = True,
+            max_length = max_length,
+            return_tensors = "pt"
+        ) 
     
-    
+
 
 
